@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,34 +7,13 @@
     background-color: #0d1117;
     -webkit-tap-highlight-color: transparent;
   }
-
   body {
-    font-family: 'Outfit', sans-serif;
     background-color: #0d1117;
     color: #e6edf3;
-    min-height: 100dvh;
+    min-height: 100vh;
     overflow-x: hidden;
   }
-
   * {
     box-sizing: border-box;
-  }
-
-  /* Scrollbar styling */
-  ::-webkit-scrollbar {
-    width: 4px;
-  }
-  ::-webkit-scrollbar-track {
-    background: #0d1117;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #30363d;
-    border-radius: 4px;
-  }
-}
-
-@layer utilities {
-  .no-tap-highlight {
-    -webkit-tap-highlight-color: transparent;
   }
 }
