@@ -19,6 +19,9 @@ function calcStats(records) {
   const totalApplied = Object.keys(records).length
   let streak = 0
   const cur = new Date(today)
+  // Se hoje ainda não foi marcado, conta a partir de ontem
+  // Streak só zera se um dia inteiro passou sem marcar
+  if (!records[toDateStr(cur)]) cur.setDate(cur.getDate() - 1)
   while (true) {
     if (records[toDateStr(cur)]) { streak++; cur.setDate(cur.getDate() - 1) } else break
   }

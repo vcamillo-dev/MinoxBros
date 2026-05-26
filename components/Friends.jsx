@@ -21,6 +21,7 @@ function calcFriendStats(records) {
 
   let streak = 0
   const cur = new Date(today)
+  if (!records[toDateStr(cur)]) cur.setDate(cur.getDate() - 1)
   while (records[toDateStr(cur)]) {
     streak++
     cur.setDate(cur.getDate() - 1)
@@ -274,11 +275,26 @@ export default function Friends({ user, userProfile }) {
     // Load pending requests received
     const { data: pending } = await supabase
       .from('friendships')
-      .select('id, requester_id, profiles!friendships_requester_id_fkey(display_name, email)')
+      .select('id, requester_id')
       .eq('addressee_id', user.id)
       .eq('status', 'pending')
 
-    setPendingReceived(pending || [])
+    // Load profiles for pending requesters separately
+    let pendingWithProfiles = []
+    if (pending && pending.length > 0) {
+      const requesterIds = pending.map(p => p.requester_id)
+      const { data: requesterProfiles } = await supabase
+        .from('profiles')
+        .select('id, display_name, email')
+        .in('id', requesterIds)
+
+      pendingWithProfiles = pending.map(p => ({
+        ...p,
+        profiles: requesterProfiles?.find(rp => rp.id === p.requester_id) || null,
+      }))
+    }
+
+    setPendingReceived(pendingWithProfiles)
     setLoading(false)
   }, [user.id])
 
@@ -294,7 +310,7 @@ export default function Friends({ user, userProfile }) {
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, display_name, email')
-      .eq('email', addEmail.trim().toLowerCase())
+      .ilike('email', addEmail.trim())
       .limit(1)
 
     if (!profiles || profiles.length === 0) {
