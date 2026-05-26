@@ -34,7 +34,12 @@ export default function Home() {
       if (error) {
         setError(traduzirErro(error.message))
       } else {
-        router.push('/dashboard')
+        const pendingCode = localStorage.getItem('pending_invite_code')
+        if (pendingCode) {
+          router.push(`/invite/${pendingCode}`)
+        } else {
+          router.push('/dashboard')
+        }
       }
     } else {
       const { error } = await supabase.auth.signUp({ email, password })
