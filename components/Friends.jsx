@@ -72,10 +72,12 @@ function MiniCalendar({ records, year, month }) {
 }
 
 // ─── Friend Card ──────────────────────────────────────────────
-function FriendCard({ friend, rank, currentUserId }) {
+function FriendCard({ friend, rank, currentUserId, onRemove }) {
   const [expanded, setExpanded] = useState(false)
   const [records, setRecords] = useState({})
   const [loadingRecords, setLoadingRecords] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
+  const [removing, setRemoving] = useState(false)
 
   const now = new Date()
   const [viewYear] = useState(now.getFullYear())
@@ -100,9 +102,15 @@ function FriendCard({ friend, rank, currentUserId }) {
     setExpanded(e => !e)
   }
 
+  const handleRemove = async () => {
+    setRemoving(true)
+    await onRemove(friend.id)
+    setRemoving(false)
+    setConfirmRemove(false)
+  }
+
   const medals = ['🥇', '🥈', '🥉']
   const medal = rank <= 3 ? medals[rank - 1] : `#${rank}`
-
   const isYou = friend.id === currentUserId
 
   return (
@@ -111,9 +119,7 @@ function FriendCard({ friend, rank, currentUserId }) {
     `}>
       <div className="p-4 flex items-center gap-3">
         {/* Rank */}
-        <div className="w-8 text-center text-lg flex-shrink-0">
-          {medal}
-        </div>
+        <div className="w-8 text-center text-lg flex-shrink-0">{medal}</div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
@@ -122,45 +128,70 @@ function FriendCard({ friend, rank, currentUserId }) {
               {friend.display_name || friend.email?.split('@')[0]}
             </p>
             {isYou && (
-              <span className="text-xs bg-glow-muted text-glow px-1.5 py-0.5 rounded-full font-body">
-                você
-              </span>
+              <span className="text-xs bg-glow-muted text-glow px-1.5 py-0.5 rounded-full font-body">você</span>
             )}
           </div>
           <div className="flex items-center gap-3 mt-0.5">
-            <span className="text-xs font-mono text-base-400">
-              🔥 {friend.streak} dias
-            </span>
-            <span className="text-xs font-mono text-base-400">
-              ✅ {friend.total} total
-            </span>
+            <span className="text-xs font-mono text-base-400">🔥 {friend.streak} dias</span>
+            <span className="text-xs font-mono text-base-400">✅ {friend.total} total</span>
           </div>
         </div>
 
-        {/* Expand button */}
+        {/* Buttons */}
         {!isYou && (
-          <button
-            onClick={toggleExpanded}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-base-700
-                       text-base-400 hover:text-base-200 active:scale-90 transition-all flex-shrink-0"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className={`w-4 h-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Expand calendar */}
+            <button
+              onClick={toggleExpanded}
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-base-700
+                         text-base-400 hover:text-base-200 active:scale-90 transition-all"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
+              <svg xmlns="http://www.w3.org/2000/svg"
+                className={`w-4 h-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Remove friend */}
+            {!confirmRemove ? (
+              <button
+                onClick={() => setConfirmRemove(true)}
+                title="Remover amigo"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-base-700
+                           text-base-500 hover:text-red-400 hover:bg-red-950/40 active:scale-90 transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6h12a6 6 0 00-6-6zm8-4l2 2m0 0l2 2m-2-2l-2 2m2-2l2-2" />
+                </svg>
+              </button>
+            ) : (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleRemove}
+                  disabled={removing}
+                  className="px-2.5 py-1.5 rounded-lg bg-red-900/60 border border-red-700/50 text-red-400
+                             text-xs font-semibold font-body active:scale-95 transition-all whitespace-nowrap"
+                >
+                  {removing ? '...' : 'Remover'}
+                </button>
+                <button
+                  onClick={() => setConfirmRemove(false)}
+                  className="px-2.5 py-1.5 rounded-lg bg-base-700 text-base-400
+                             text-xs font-semibold font-body active:scale-95 transition-all"
+                >
+                  Não
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
       {/* Expanded calendar */}
       {expanded && !isYou && (
         <div className="px-4 pb-4 border-t border-base-700 pt-3">
-          <p className="text-xs text-base-500 font-body mb-1">
-            {MONTH_NAMES[viewMonth]} {viewYear}
-          </p>
+          <p className="text-xs text-base-500 font-body mb-1">{MONTH_NAMES[viewMonth]} {viewYear}</p>
           {loadingRecords ? (
             <div className="flex justify-center py-4">
               <div className="w-5 h-5 rounded-full border-2 border-glow border-t-transparent animate-spin" />
@@ -373,12 +404,18 @@ export default function Friends({ user, userProfile }) {
   // ── Reject friend request ────────────────────────────────────
   const handleReject = async (friendshipId) => {
     setActionLoading(true)
+    await supabase.from('friendships').delete().eq('id', friendshipId)
+    await loadFriends()
+    setActionLoading(false)
+  }
+
+  // ── Remove friend ─────────────────────────────────────────────
+  const handleRemoveFriend = async (friendId) => {
     await supabase
       .from('friendships')
       .delete()
-      .eq('id', friendshipId)
+      .or(`and(requester_id.eq.${user.id},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${user.id})`)
     await loadFriends()
-    setActionLoading(false)
   }
 
   // ── Copy invite link ─────────────────────────────────────────
@@ -510,6 +547,7 @@ export default function Friends({ user, userProfile }) {
               friend={friend}
               rank={idx + 1}
               currentUserId={user.id}
+              onRemove={handleRemoveFriend}
             />
           ))}
         </div>

@@ -61,10 +61,34 @@ export default function InvitePage() {
 
     if (existing && existing.length > 0) {
       const s = existing[0].status
-      setStatus('error')
-      setMessage(s === 'accepted' ? 'Vocês já são amigos! 🎉' : 'Pedido de amizade já enviado.')
-      setTimeout(() => router.push('/dashboard'), 2500)
-      return
+
+      // Já são amigos
+      if (s === 'accepted') {
+        setStatus('error')
+        setMessage('Vocês já são amigos! 🎉')
+        setTimeout(() => router.push('/dashboard?tab=friends'), 2500)
+        return
+      }
+
+      // Pedido pendente — aceita automaticamente via link de convite
+      if (s === 'pending') {
+        const { error } = await supabase
+          .from('friendships')
+          .update({ status: 'accepted' })
+          .eq('id', existing[0].id)
+
+        const name = inviter.display_name || inviter.email?.split('@')[0]
+        if (error) {
+          setStatus('error')
+          setMessage('Erro ao aceitar convite. Tente novamente.')
+        } else {
+          setStatus('success')
+          setMessage(`Você e ${name} agora são amigos! 🎉`)
+          localStorage.removeItem('pending_invite_code')
+          setTimeout(() => router.push('/dashboard?tab=friends'), 2500)
+        }
+        return
+      }
     }
 
     // Create friendship as accepted directly (invite link = auto-accept)
