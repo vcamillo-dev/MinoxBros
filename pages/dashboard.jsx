@@ -111,6 +111,13 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('calendar')
   const [signOutLoading, setSignOutLoading] = useState(false)
 
+  // Lê o parâmetro ?tab=friends da URL (vindo do link de convite)
+  useEffect(() => {
+    if (router.query.tab === 'friends') {
+      setActiveTab('friends')
+    }
+  }, [router.query.tab])
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
