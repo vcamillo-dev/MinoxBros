@@ -91,10 +91,10 @@ export default function InvitePage() {
       }
     }
 
-    // Create friendship as accepted directly (invite link = auto-accept)
+    // Cria amizade já como aceita — quem clica no link é o requester (satisfaz RLS)
     const { error } = await supabase
       .from('friendships')
-      .insert({ requester_id: inviter.id, addressee_id: userId, status: 'accepted' })
+      .insert({ requester_id: userId, addressee_id: inviter.id, status: 'accepted' })
 
     if (error) {
       setStatus('error')

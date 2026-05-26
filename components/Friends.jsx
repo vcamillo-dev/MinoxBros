@@ -15,6 +15,52 @@ const MONTH_NAMES = [
 ]
 const WEEK_DAYS = ['D','S','T','Q','Q','S','S']
 
+// ─── Modal de Confirmação ──────────────────────────────────────
+function ConfirmModal({ name, onConfirm, onCancel, loading }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-5"
+         style={{ background: 'rgba(7,11,15,0.85)', backdropFilter: 'blur(4px)' }}>
+      <div className="w-full max-w-sm bg-base-800 border border-base-600 rounded-2xl p-6 shadow-2xl animate-slide-up">
+        <div className="text-center mb-5">
+          <span className="text-4xl">💔</span>
+          <h3 className="font-display text-lg font-bold text-base-200 mt-3">Remover amigo</h3>
+          <p className="text-base-400 text-sm font-body mt-2 leading-relaxed">
+            Tem certeza que deseja remover{' '}
+            <span className="text-base-200 font-semibold">{name}</span>{' '}
+            da sua lista de amigos?
+          </p>
+          <p className="text-base-500 text-xs font-body mt-1">
+            O histórico de aplicações não será afetado.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            disabled={loading}
+            className="flex-1 py-3 rounded-xl bg-base-700 text-base-300 font-semibold text-sm font-body
+                       active:scale-95 transition-all hover:bg-base-600"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 py-3 rounded-xl bg-red-900/70 border border-red-700/50 text-red-400
+                       font-semibold text-sm font-body active:scale-95 transition-all hover:bg-red-900"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 rounded-full border-2 border-red-400 border-t-transparent animate-spin" />
+                Removendo...
+              </span>
+            ) : 'Sim, remover'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function calcFriendStats(records) {
   const today = new Date()
   const total = Object.keys(records).length
@@ -76,7 +122,7 @@ function FriendCard({ friend, rank, currentUserId, onRemove }) {
   const [expanded, setExpanded] = useState(false)
   const [records, setRecords] = useState({})
   const [loadingRecords, setLoadingRecords] = useState(false)
-  const [confirmRemove, setConfirmRemove] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [removing, setRemoving] = useState(false)
 
   const now = new Date()
@@ -106,57 +152,64 @@ function FriendCard({ friend, rank, currentUserId, onRemove }) {
     setRemoving(true)
     await onRemove(friend.id)
     setRemoving(false)
-    setConfirmRemove(false)
+    setShowModal(false)
   }
 
   const medals = ['🥇', '🥈', '🥉']
   const medal = rank <= 3 ? medals[rank - 1] : `#${rank}`
   const isYou = friend.id === currentUserId
+  const friendName = friend.display_name || friend.email?.split('@')[0]
 
   return (
-    <div className={`bg-base-800 border rounded-xl overflow-hidden transition-all duration-200
-      ${isYou ? 'border-glow/40' : 'border-base-600'}
-    `}>
-      <div className="p-4 flex items-center gap-3">
-        {/* Rank */}
-        <div className="w-8 text-center text-lg flex-shrink-0">{medal}</div>
+    <>
+      {/* Modal de confirmação */}
+      {showModal && (
+        <ConfirmModal
+          name={friendName}
+          onConfirm={handleRemove}
+          onCancel={() => setShowModal(false)}
+          loading={removing}
+        />
+      )}
 
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-semibold text-base-200 font-body truncate text-sm">
-              {friend.display_name || friend.email?.split('@')[0]}
-            </p>
-            {isYou && (
-              <span className="text-xs bg-glow-muted text-glow px-1.5 py-0.5 rounded-full font-body">você</span>
-            )}
+      <div className={`bg-base-800 border rounded-xl overflow-hidden transition-all duration-200
+        ${isYou ? 'border-glow/40' : 'border-base-600'}
+      `}>
+        <div className="p-4 flex items-center gap-3">
+          {/* Rank */}
+          <div className="w-8 text-center text-lg flex-shrink-0">{medal}</div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-base-200 font-body truncate text-sm">{friendName}</p>
+              {isYou && (
+                <span className="text-xs bg-glow-muted text-glow px-1.5 py-0.5 rounded-full font-body">você</span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 mt-0.5">
+              <span className="text-xs font-mono text-base-400">🔥 {friend.streak} dias</span>
+              <span className="text-xs font-mono text-base-400">✅ {friend.total} total</span>
+            </div>
           </div>
-          <div className="flex items-center gap-3 mt-0.5">
-            <span className="text-xs font-mono text-base-400">🔥 {friend.streak} dias</span>
-            <span className="text-xs font-mono text-base-400">✅ {friend.total} total</span>
-          </div>
-        </div>
 
-        {/* Buttons */}
-        {!isYou && (
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* Expand calendar */}
-            <button
-              onClick={toggleExpanded}
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-base-700
-                         text-base-400 hover:text-base-200 active:scale-90 transition-all"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg"
-                className={`w-4 h-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
+          {/* Buttons */}
+          {!isYou && (
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {/* Expand calendar */}
+              <button onClick={toggleExpanded}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-base-700
+                           text-base-400 hover:text-base-200 active:scale-90 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                  className={`w-4 h-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
-            {/* Remove friend */}
-            {!confirmRemove ? (
+              {/* Remove button — abre modal */}
               <button
-                onClick={() => setConfirmRemove(true)}
+                onClick={() => setShowModal(true)}
                 title="Remover amigo"
                 className="w-8 h-8 flex items-center justify-center rounded-lg bg-base-700
                            text-base-500 hover:text-red-400 hover:bg-red-950/40 active:scale-90 transition-all"
@@ -165,43 +218,25 @@ function FriendCard({ friend, rank, currentUserId, onRemove }) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6h12a6 6 0 00-6-6zm8-4l2 2m0 0l2 2m-2-2l-2 2m2-2l2-2" />
                 </svg>
               </button>
-            ) : (
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={handleRemove}
-                  disabled={removing}
-                  className="px-2.5 py-1.5 rounded-lg bg-red-900/60 border border-red-700/50 text-red-400
-                             text-xs font-semibold font-body active:scale-95 transition-all whitespace-nowrap"
-                >
-                  {removing ? '...' : 'Remover'}
-                </button>
-                <button
-                  onClick={() => setConfirmRemove(false)}
-                  className="px-2.5 py-1.5 rounded-lg bg-base-700 text-base-400
-                             text-xs font-semibold font-body active:scale-95 transition-all"
-                >
-                  Não
-                </button>
+            </div>
+          )}
+        </div>
+
+        {/* Expanded calendar */}
+        {expanded && !isYou && (
+          <div className="px-4 pb-4 border-t border-base-700 pt-3">
+            <p className="text-xs text-base-500 font-body mb-1">{MONTH_NAMES[viewMonth]} {viewYear}</p>
+            {loadingRecords ? (
+              <div className="flex justify-center py-4">
+                <div className="w-5 h-5 rounded-full border-2 border-glow border-t-transparent animate-spin" />
               </div>
+            ) : (
+              <MiniCalendar records={records} year={viewYear} month={viewMonth} />
             )}
           </div>
         )}
       </div>
-
-      {/* Expanded calendar */}
-      {expanded && !isYou && (
-        <div className="px-4 pb-4 border-t border-base-700 pt-3">
-          <p className="text-xs text-base-500 font-body mb-1">{MONTH_NAMES[viewMonth]} {viewYear}</p>
-          {loadingRecords ? (
-            <div className="flex justify-center py-4">
-              <div className="w-5 h-5 rounded-full border-2 border-glow border-t-transparent animate-spin" />
-            </div>
-          ) : (
-            <MiniCalendar records={records} year={viewYear} month={viewMonth} />
-          )}
-        </div>
-      )}
-    </div>
+    </>
   )
 }
 
